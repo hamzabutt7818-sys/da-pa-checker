@@ -1,0 +1,72 @@
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.results-table th {
+    background: #667eea;
+    color: white;
+    padding: 15px;
+    text-align: left;
+}
+
+.results-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.results-table tr:last-child td {
+    border-bottom: none;
+}
+
+.results-table tr:hover {
+    background: #f8f9ff;
+}
+
+.metric-value {
+    font-weight: bold;
+    color: #667eea;
+}
+
+.sort-arrow {
+    display: inline-block;
+    margin-left: 5px;
+    font-size: 12px;
+}
+
+.status-icon {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    text-align: center;
+    line-height: 20px;
+    border-radius: 50%;
+    font-size: 12px;
+}
+
+.status-good {
+    background: #4caf50;
+    color: white;
+}
+
+.status-warning {
+    background: #ff9800;
+    color: white;
+}
+
+.domain-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.favicon {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}

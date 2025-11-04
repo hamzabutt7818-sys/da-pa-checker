@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Free DA/PA Checker - OpenPageRank</title>
+  <link rel="stylesheet" href="table.css">
   <style>
     * {
       margin: 0;
@@ -370,6 +371,223 @@
     function formatNumber(num) {
       return new Intl.NumberFormat().format(num);
     }
+
+    // Screenshot function
+    async function captureScreenshot() {
+      const resultContainer = document.querySelector('.result-container');
+      try {
+        const canvas = await html2canvas(resultContainer);
+        const image = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `domain-metrics-${new Date().toISOString()}.png`;
+        link.href = image;
+        link.click();
+      } catch (err) {
+        alert('Error capturing screenshot: ' + err.message);
+      }
+    }
+
+    // PDF Export
+    function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const resultText = document.querySelector('.result-container').innerText;
+      
+      doc.setFontSize(16);
+      doc.text('Domain Authority Report', 20, 20);
+      
+      doc.setFontSize(12);
+      const lines = doc.splitTextToSize(resultText, 170);
+      doc.text(lines, 20, 40);
+      
+      doc.save(`domain-report-${new Date().toISOString()}.pdf`);
+    }
+
+    // CSV Export
+    function exportToCSV() {
+      const data = window.currentResults; // We'll set this when receiving API response
+      if (!data) return;
+      
+      const csv = [
+        ['Domain', 'Page Rank', 'Global Rank', 'Domain Age', 'Creation Date'].join(','),
+        [
+          data.domain,
+          data.metrics.page_rank_decimal,
+          data.metrics.rank,
+          `${data.domainAge.years} years, ${data.domainAge.months} months`,
+          data.domainAge.created
+        ].join(',')
+      ].join('\\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `domain-metrics-${new Date().toISOString()}.csv`;
+      link.href = url;
+      link.click();
+    }
+
+    // Bulk domain check
+    function checkMultipleDomains() {
+      const modalHtml = `
+        <div id="bulkModal" class="modal">
+          <div class="modal-content">
+            <h3>Check Multiple Domains</h3>
+            <p>Enter one domain per line (max 10 domains)</p>
+            <textarea id="bulkDomains" rows="10" placeholder="example1.com\\nexample2.com"></textarea>
+            <div class="modal-buttons">
+              <button onclick="processBulkDomains()" class="action-btn">Check Domains</button>
+              <button onclick="closeBulkModal()" class="action-btn secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    async function processBulkDomains() {
+      const textarea = document.getElementById('bulkDomains');
+      const domains = textarea.value.split('\\n')
+        .map(d => d.trim())
+        .filter(d => d)
+        .slice(0, 10);
+      
+      if (!domains.length) {
+        alert('Please enter at least one domain');
+        return;
+      }
+      
+      closeBulkModal();
+      
+      // Show bulk results container
+      const bulkContainer = document.createElement('div');
+      bulkContainer.className = 'bulk-results';
+      bulkContainer.innerHTML = '<h3>Bulk Check Results</h3>';
+      document.querySelector('.result-container').appendChild(bulkContainer);
+      
+      for (const domain of domains) {
+        const domainDiv = document.createElement('div');
+        domainDiv.className = 'bulk-domain-result';
+        domainDiv.innerHTML = `Checking ${domain}...`;
+        bulkContainer.appendChild(domainDiv);
+        
+        try {
+          const response = await fetch(`/api/oprank?domain=${encodeURIComponent(domain)}`);
+          const data = await response.json();
+          
+          if (!response.ok) throw new Error(data.message);
+          
+          domainDiv.innerHTML = `
+            <div class="bulk-domain-card">
+              <h4>${domain}</h4>
+              <p>Score: ${data.metrics.page_rank_decimal ?? 'n/a'}</p>
+              <p>Age: ${data.domainAge.years ? `${data.domainAge.years}y ${data.domainAge.months}m` : 'n/a'}</p>
+            </div>
+          `;
+        } catch (err) {
+          domainDiv.innerHTML = `
+            <div class="bulk-domain-card error">
+              <h4>${domain}</h4>
+              <p>Error: ${err.message}</p>
+            </div>
+          `;
+        }
+        
+        // Small delay to prevent rate limiting
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+
+    function closeBulkModal() {
+      const modal = document.getElementById('bulkModal');
+      if (modal) modal.remove();
+    }
+
+    // Add required scripts
+    const scripts = [
+      'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+      'https://cdn.jsdelivr.net/npm/chart.js'
+    ];
+
+    scripts.forEach(src => {
+      const script = document.createElement('script');
+      script.src = src;
+      document.head.appendChild(script);
+    });
+
+    // Add styles for new features
+    const newStyles = `
+      .metric-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+      }
+      
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+      
+      .chart-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      .modal-content {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+      }
+      
+      .modal textarea {
+        width: 100%;
+        margin: 15px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      
+      .bulk-domain-card {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+      }
+      
+      .bulk-domain-card.error {
+        background: #fff5f5;
+        border-left: 4px solid #ff6b6b;
+      }
+      
+      .action-btn.secondary {
+        background: #6c757d;
+      }
+    `;
+    
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = newStyles;
+    document.head.appendChild(styleSheet);
   </script>
 </body>
 </html>
