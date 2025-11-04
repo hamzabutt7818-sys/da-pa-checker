@@ -1,1 +1,300 @@
-<!doctype html><html lang="en"> <head> <meta charset="utf-8" /> <meta name="viewport" content="width=device-width,initial-scale=1" /> <title>Free DA/PA Checker</title> <!-- IMPORTANT: /public path use ho raha hai --> <link rel="stylesheet" href="/public/style.css" /> </head> <body> <div class="box"> <h1>Free DA/PA Checker</h1> <form id="form"> <input id="domain" type="text" placeholder="example.com" required /> <button type="submit">Check</button> </form> <div id="result"></div> </div> <script src="/public/script.js"></script> </body> </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free DA/PA Checker</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 500px;
+      width: 100%;
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    input {
+      flex: 1;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border 0.3s;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    button {
+      padding: 12px 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .result {
+      display: none;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    
+    .result.show {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    
+    .metric:last-child {
+      margin-bottom: 0;
+    }
+    
+    .metric-label {
+      font-weight: 600;
+      color: #555;
+    }
+    
+    .metric-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+    }
+    
+    .error {
+      color: #e74c3c;
+      padding: 15px;
+      background: #fadbd8;
+      border-radius: 8px;
+      margin-top: 15px;
+      display: none;
+    }
+    
+    .error.show {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      color: #667eea;
+      margin-top: 15px;
+    }
+    
+    .loading.show {
+      display: block;
+    }
+    
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 10px auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .info {
+      margin-top: 20px;
+      padding: 15px;
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #1976d2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Free DA/PA Checker</h1>
+    <p class="subtitle">Check Domain Authority & Page Authority using OpenPageRank</p>
+    
+    <div class="input-group">
+      <input 
+        type="text" 
+        id="domainInput" 
+        placeholder="example.com"
+        value="example.com"
+      >
+      <button id="checkBtn" onclick="checkDomain()">Check</button>
+    </div>
+    
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Checking domain...</p>
+    </div>
+    
+    <div class="error" id="error"></div>
+    
+    <div class="result" id="result">
+      <div class="metric">
+        <span class="metric-label">Domain</span>
+        <span class="metric-value" id="domainName">-</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Page Rank (Integer)</span>
+        <span class="metric-value" id="prInteger">-</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Page Rank (Decimal)</span>
+        <span class="metric-value" id="prDecimal">-</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Global Rank</span>
+        <span class="metric-value" id="globalRank">-</span>
+      </div>
+    </div>
+    
+    <div class="info">
+      <strong>Note:</strong> This tool uses OpenPageRank API to calculate domain metrics. Results may differ from Moz DA/PA.
+    </div>
+  </div>
+
+  <script>
+    const domainInput = document.getElementById('domainInput');
+    const checkBtn = document.getElementById('checkBtn');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const result = document.getElementById('result');
+
+    // Enter key support
+    domainInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') checkDomain();
+    });
+
+    async function checkDomain() {
+      const domain = domainInput.value.trim();
+      
+      if (!domain) {
+        showError('Please enter a domain name');
+        return;
+      }
+
+      // Reset UI
+      hideAll();
+      loading.classList.add('show');
+      checkBtn.disabled = true;
+
+      try {
+        const response = await fetch(`/api/oprank?domain=${encodeURIComponent(domain)}`);
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.message || 'Failed to fetch data');
+        }
+
+        showResult(data);
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        loading.classList.remove('show');
+        checkBtn.disabled = false;
+      }
+    }
+
+    function showResult(data) {
+      document.getElementById('domainName').textContent = data.domain || '-';
+      document.getElementById('prInteger').textContent = data.page_rank_integer ?? 'N/A';
+      document.getElementById('prDecimal').textContent = 
+        data.page_rank_decimal !== null ? data.page_rank_decimal.toFixed(2) : 'N/A';
+      document.getElementById('globalRank').textContent = 
+        data.rank ? formatNumber(data.rank) : 'N/A';
+      
+      result.classList.add('show');
+    }
+
+    function showError(message) {
+      error.textContent = message;
+      error.classList.add('show');
+    }
+
+    function hideAll() {
+      result.classList.remove('show');
+      error.classList.remove('show');
+    }
+
+    function formatNumber(num) {
+      return new Intl.NumberFormat().format(num);
+    }
+  </script>
+</body>
+</html>
