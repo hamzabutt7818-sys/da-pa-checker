@@ -10,14 +10,23 @@ const PORT = process.env.PORT || 3000;
 // Enable CORS
 app.use(cors());
 
-// Serve static files with correct mime types
-app.use(express.static(path.join(__dirname, 'public'), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.css')) {
+// Basic middleware for logging
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
+
+// Serve static files from public directory
+app.use(express.static('public', {
+  maxAge: '1h',
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
-    } else if (path.endsWith('.js')) {
+    } else if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
     }
+    // Add cache control headers
+    res.setHeader('Cache-Control', 'public, max-age=3600');
   }
 }));
 
