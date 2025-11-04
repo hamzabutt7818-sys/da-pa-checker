@@ -16,19 +16,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files from public directory
-app.use(express.static('public', {
-  maxAge: '1h',
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css');
-    } else if (filePath.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
-    }
-    // Add cache control headers
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-  }
-}));
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
 
 // static files
 app.use(express.static(path.join(__dirname, 'public')));
