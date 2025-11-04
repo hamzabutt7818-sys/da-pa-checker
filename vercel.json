@@ -1,12 +1,11 @@
 {
 "version": 2,
 "builds": [
-{ "src": "api/.js", "use": "@vercel/node" },
+{ "src": "api/*.js", "use": "@vercel/node" },
 { "src": "public/**", "use": "@vercel/static" }
 ],
-"rewrites": [
-{ "source": "/api/oprank", "destination": "/api/oprank.js" },
-{ "source": "/", "destination": "/public/index.html" },
-{ "source": "/(.)", "destination": "/public/$1" }
+"routes": [
+{ "src": "/api/oprank", "dest": "/api/oprank.js" },
+{ "src": "/", "dest": "/public/index.html" }
 ]
 }
