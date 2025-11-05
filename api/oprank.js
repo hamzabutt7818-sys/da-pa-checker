@@ -33,12 +33,11 @@ module.exports = async (req, res) => {
     });
   }
 
-  // Check API key
-  const apiKey = process.env.OPR_API_KEY || 'wo80ok4sks0o4wog8404wogs484s0cc0owckk8g8';
-  
+  // Check API key (must be set in environment)
+  const apiKey = process.env.OPR_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ 
-      ok: false, 
+    return res.status(500).json({
+      ok: false,
       message: 'API key not configured in environment variables'
     });
   }
@@ -55,8 +54,8 @@ module.exports = async (req, res) => {
     
     const data = oprResponse.data;
     const item = (data.response && data.response[0]) || {};
-    
-    // Check if domain was found
+
+    // If domain not found
     if (item.status_code === 404) {
       return res.status(404).json({
         ok: false,
@@ -64,16 +63,18 @@ module.exports = async (req, res) => {
         domain: domain
       });
     }
-    
-    // Return success response
+
+    // Return consistent metrics shape (null when unavailable)
     return res.status(200).json({
       ok: true,
       provider: 'OpenPageRank',
       domain: item.domain || domain,
       metrics: {
-        page_rank_decimal: item.page_rank_decimal ?? 0,
-        page_rank_integer: item.page_rank_integer ?? 0,
-        rank: item.rank ?? 'N/A',
+        page_rank_decimal: typeof item.page_rank_decimal === 'number' && Number.isFinite(item.page_rank_decimal)
+          ? Number(item.page_rank_decimal.toFixed(2))
+          : null,
+        page_rank_integer: typeof item.page_rank_integer === 'number' ? item.page_rank_integer : null,
+        rank: typeof item.rank === 'number' ? item.rank : null,
         status_code: item.status_code ?? 200
       },
       raw: item // Full raw data

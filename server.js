@@ -50,14 +50,20 @@ app.get('/api/oprank', async (req, res) => {
     }
 
     const item = data.response[0];
+    // Return a consistent response shape: metrics object + raw
     return res.json({
       ok: true,
-      provider: 'openpagerank',
+      provider: 'OpenPageRank',
       domain: item.domain || domain,
-      page_rank_decimal: typeof item.page_rank_decimal === 'number' ? Number(item.page_rank_decimal.toFixed(2)) : null,
-      page_rank_integer: typeof item.page_rank_integer === 'number' ? item.page_rank_integer : null,
-      rank: typeof item.rank === 'number' ? item.rank : null,
-      status_code: item.status_code || 404
+      metrics: {
+        page_rank_decimal: typeof item.page_rank_decimal === 'number' && Number.isFinite(item.page_rank_decimal)
+          ? Number(item.page_rank_decimal.toFixed(2))
+          : null,
+        page_rank_integer: typeof item.page_rank_integer === 'number' ? item.page_rank_integer : null,
+        rank: typeof item.rank === 'number' ? item.rank : null,
+        status_code: item.status_code ?? 200
+      },
+      raw: item
     });
   } catch (e) {
     console.error('API Error:', e);
