@@ -40,16 +40,33 @@ app.get('/api/oprank', async (req, res) => {
   try {
     const url = `https://openpagerank.com/api/v1.0/getPageRank?domains[]=${encodeURIComponent(domain)}`;
     const { data } = await axios.get(url, { headers: { 'API-OPR': process.env.OPR_API_KEY } });
-    const item = (data.response && data.response[0]) || {};
+    
+    if (!data || !data.response || !data.response[0]) {
+      return res.status(404).json({
+        ok: false,
+        message: 'No data found for this domain',
+        domain: domain
+      });
+    }
+
+    const item = data.response[0];
     return res.json({
       ok: true,
       provider: 'openpagerank',
       domain: item.domain || domain,
-      page_rank_decimal: item.page_rank_decimal ?? null,
-      page_rank_integer: item.page_rank_integer ?? null
+      page_rank_decimal: typeof item.page_rank_decimal === 'number' ? Number(item.page_rank_decimal.toFixed(2)) : null,
+      page_rank_integer: typeof item.page_rank_integer === 'number' ? item.page_rank_integer : null,
+      rank: typeof item.rank === 'number' ? item.rank : null,
+      status_code: item.status_code || 404
     });
   } catch (e) {
-    return res.status(500).json({ ok: false, message: 'OPR error', details: e?.response?.data || e.message });
+    console.error('API Error:', e);
+    return res.status(500).json({ 
+      ok: false, 
+      message: 'OPR error', 
+      details: e?.response?.data || e.message,
+      domain: domain
+    });
   }
 });
 
