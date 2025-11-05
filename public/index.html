@@ -346,15 +346,22 @@
     }
 
     function showResult(data) {
-      document.getElementById('domainName').textContent = data.domain || '-';
-      document.getElementById('prInteger').textContent = data.page_rank_integer ?? 'N/A';
+      // Support both API shapes: top-level fields or data.metrics
+      const domain = data.domain || data.metrics?.domain || '-';
+      const prInteger = (data.page_rank_integer ?? data.metrics?.page_rank_integer) ?? null;
+      const prDecimalRaw = (data.page_rank_decimal ?? data.metrics?.page_rank_decimal) ?? null;
+      const rank = (data.rank ?? data.metrics?.rank) ?? null;
+      const status = (data.status_code ?? data.metrics?.status_code) ?? null;
+
+      document.getElementById('domainName').textContent = domain;
+      document.getElementById('prInteger').textContent = prInteger !== null ? prInteger : 'N/A';
       document.getElementById('prDecimal').textContent = 
-        data.page_rank_decimal !== null ? data.page_rank_decimal.toFixed(2) : 'N/A';
+        (typeof prDecimalRaw === 'number' && Number.isFinite(prDecimalRaw)) ? prDecimalRaw.toFixed(2) : 'N/A';
       document.getElementById('globalRank').textContent = 
-        data.rank ? formatNumber(data.rank) : 'N/A';
+        rank ? formatNumber(rank) : 'N/A';
       document.getElementById('status').textContent = 
-        data.status_code === 200 ? '✅' : '⚠️';
-      
+        status === 200 ? '✅' : '⚠️';
+
       result.classList.add('show');
     }
 
